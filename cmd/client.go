@@ -99,11 +99,11 @@ func newHTTPcl() *http.Client {
 }
 
 //NewClient creates a new http.Client configured with custom retry and rate limiting settings
-func NewClient(rl *rate.Limiter) *Client {
+func NewClient() *Client {
 	clnt := newHTTPcl()
 	sc := &Client{
 		HTTPcl: clnt,
-		RateLm: rl,
+		RateLm: Tier3Rl,
 	}
 	return sc
 }

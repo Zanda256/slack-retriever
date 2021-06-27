@@ -1,8 +1,28 @@
 package slack
 
+var (
+	ChID     string
+	APIToken string
+	Latest   string
+	Oldest   string
+	MaxItems uint64
+	Archives bool
+)
+
+type msgHistParams struct {
+	channelID string
+	token     string
+	cursor    string
+	latest    float64
+	limit     int
+	oldest    float64
+	endPoint  string
+}
+
 type convoInfoRawResponse struct {
 	Success bool                   `json:"ok"`
 	Channel map[string]interface{} `json:"channel"`
+	Err     string                 `json:"error"`
 }
 
 type convoHistoryResponse struct {
@@ -27,6 +47,7 @@ type convoHistoryResponse struct {
 	ResponseMetadata struct {
 		NextCursor string `json:"next_cursor"`
 	} `json:"response_metadata"`
+	Err string `json:"error"`
 }
 
 type convoMembersRawResponse struct {
@@ -35,6 +56,7 @@ type convoMembersRawResponse struct {
 	ResponseMetadata struct {
 		NextCursor string `json:"next_cursor"`
 	} `json:"response_metadata"`
+	Err string `json:"error"`
 }
 
 // type msgAttachment struct {
