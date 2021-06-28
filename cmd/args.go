@@ -13,5 +13,10 @@ func ParseArgs() bool {
 	flag.Uint64Var(&MaxItems, "MaxItems", 1000, "Maximum number of messages to retrive. Usage : -MaxItems 200")
 	flag.BoolVar(&Archives, "Archives", false, "Set this option to true to retreive messages from an archived channel. Usage : -Archives true")
 	flag.Parse()
+	if ChID == "" {
+		return false
+	} else if APIToken == "" {
+		return false
+	}
 	return flag.Parsed()
 }
