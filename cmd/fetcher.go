@@ -1,6 +1,7 @@
 package slack
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -27,7 +28,9 @@ type Fetcher struct {
 }
 
 //GetChannelInfo method makes the conversations.info api call
-func (f *Fetcher) GetChannelInfo() (*http.Response, error) {
+func (f *Fetcher) GetChannelInfo() (map[string]interface{}, error) {
+	var rData convoInfoRawResponse
+	var channelInfo map[string]interface{}
 	par := &msgHistParams{
 		channelID: ChID,
 		token:     APIToken,
@@ -38,20 +41,46 @@ func (f *Fetcher) GetChannelInfo() (*http.Response, error) {
 		fmt.Println(err)
 		return nil, err
 	}
-	return r, nil
+	defer r.Body.Close()
+	err = json.NewDecoder(r.Body).Decode(&rData)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+	if rData.Success {
+		channelInfo["arch"] = rData.Channel["is_archived"].(bool)
+		channelInfo["chName"] = rData.Channel["name"].(string)
+		channelInfo["createdTs"] = rData.Channel["created"].(float64)
+		channelInfo["creator"] = rData.Channel["creator"].(string)
+
+	} else if !rData.Success {
+		err = fmt.Errorf("can not fetch messages because : %s", rData.Err)
+		return nil, err
+	}
+	return channelInfo, nil
 }
 
 //GetChannelMembers fetches a list of memberIds for given channel
 func (f *Fetcher) GetChannelMembers(par *msgHistParams) (*http.Response, error) {
+	var rData convoMembersRawResponse
+	//var memIDs []string
 	par.channelID = ChID
 	par.token = APIToken
 	par.endPoint = convoMessages
+	if MaxItems != 0 && MaxItems <= 1000 {
+		par.limit = int(MaxItems)
+	}
 	r, err := f.makeAPICall(par)
 	if err != nil {
 		fmt.Println(err)
 		return nil, err
 	}
-	return r, nil
+	err = json.NewDecoder(r.Body).Decode(&rData)
+	if err != nil {
+		fmt.Println(err)
+		return nil, err
+	}
+
 }
 
 //GetMsgHistory fetches messages from the specified channel
@@ -78,7 +107,8 @@ func (f *Fetcher) GetMsgHistory(par *msgHistParams) (*http.Response, error) {
 	if err != nil {
 		return nil, err
 	}
-	return r, nil
+
+	//return r, nil
 }
 
 func (f *Fetcher) makeAPICall(params *msgHistParams) (*http.Response, error) {
