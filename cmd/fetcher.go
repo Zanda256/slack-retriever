@@ -30,7 +30,7 @@ type Fetcher struct {
 //GetChannelInfo method makes the conversations.info api call
 func (f *Fetcher) GetChannelInfo() (map[string]interface{}, error) {
 	var rData convoInfoRawResponse
-	var channelInfo map[string]interface{}
+	var Info map[string]interface{}
 	par := &msgHistParams{
 		channelID: ChID,
 		token:     APIToken,
@@ -48,67 +48,141 @@ func (f *Fetcher) GetChannelInfo() (map[string]interface{}, error) {
 		return nil, err
 	}
 	if rData.Success {
-		channelInfo["arch"] = rData.Channel["is_archived"].(bool)
-		channelInfo["chName"] = rData.Channel["name"].(string)
-		channelInfo["createdTs"] = rData.Channel["created"].(float64)
-		channelInfo["creator"] = rData.Channel["creator"].(string)
+		Info["arch"] = rData.Channel["is_archived"].(bool)
+		Info["Name"] = rData.Channel["name"].(string)
+		Info["createdAt"] = rData.Channel["created"].(float64)
+		Info["creator"] = rData.Channel["creator"].(string)
 
 	} else if !rData.Success {
-		err = fmt.Errorf("can not fetch messages because : %s", rData.Err)
+		err = fmt.Errorf("can not fetch channel info because : %s", rData.Err)
 		return nil, err
 	}
-	return channelInfo, nil
+	return Info, nil
 }
 
 //GetChannelMembers fetches a list of memberIds for given channel
-func (f *Fetcher) GetChannelMembers(par *msgHistParams) (*http.Response, error) {
-	var rData convoMembersRawResponse
-	//var memIDs []string
-	par.channelID = ChID
-	par.token = APIToken
-	par.endPoint = convoMessages
-	if MaxItems != 0 && MaxItems <= 1000 {
-		par.limit = int(MaxItems)
-	}
-	r, err := f.makeAPICall(par)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
-	err = json.NewDecoder(r.Body).Decode(&rData)
-	if err != nil {
-		fmt.Println(err)
-		return nil, err
-	}
+func GetChannelMembers(f *Fetcher, par *msgHistParams) (int, error) {
+	var (
+		rData      convoMembersRawResponse
+		numMembers int
+	)
+	fetchMembers := func() (*http.Response, error) {
+		par.channelID = ChID
+		par.token = APIToken
+		par.endPoint = convoMessages
 
+		r, err := f.makeAPICall(par)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		return r, nil
+	}
+	resp, err := fetchMembers()
+	if err != nil {
+		fmt.Println(err)
+		return -1, err
+	}
+	loadJSON := func(r *http.Response) error {
+		err = json.NewDecoder(r.Body).Decode(&rData)
+		defer r.Body.Close()
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		return nil
+	}
+	err = loadJSON(resp)
+	if err != nil {
+		fmt.Println(err)
+		return -1, err
+	}
+	if !rData.Success {
+		err = fmt.Errorf("can not fetch channel members because : %s", rData.Err)
+		return -1, err
+	}
+	numMembers += len(rData.MembersIDs)
+	for ok := rData.ResponseMetadata.NextCursor; ok != ""; {
+		par.cursor = ok
+		resp, err := fetchMembers()
+		if err != nil {
+			fmt.Println(err)
+			return -1, err
+		}
+		err = loadJSON(resp)
+		if err != nil {
+			fmt.Println(err)
+			return -1, err
+		}
+		numMembers += len(rData.MembersIDs)
+	}
+	return numMembers, nil
 }
 
 //GetMsgHistory fetches messages from the specified channel
-func (f *Fetcher) GetMsgHistory(par *msgHistParams) (*http.Response, error) {
-	if Oldest != "" {
-		frm, err := dateStrToUnix(Oldest)
+func GetMsgHistory(f *Fetcher, par *msgHistParams) ([]rawMsg, error) {
+	var (
+		rData    convoHistoryResponse
+		Messages []rawMsg
+	)
+	fetchMsgs := func() (*http.Response, error) {
+		if Oldest != "" {
+			frm, err := dateStrToUnix(Oldest)
+			if err != nil {
+				return nil, err
+			}
+			par.oldest = frm
+		}
+		if Latest != "" {
+			to, err := dateStrToUnix(Latest)
+			if err != nil {
+				return nil, err
+			}
+			par.latest = to
+		}
+
+		par.channelID = ChID
+		par.token = APIToken
+		par.endPoint = convoMessages
+		r, err := f.makeAPICall(par)
 		if err != nil {
 			return nil, err
 		}
-		par.oldest = frm
+
+		return r, nil
 	}
-	if Latest != "" {
-		to, err := dateStrToUnix(Latest)
+	resp, err := fetchMsgs()
+	loadJSON := func(r *http.Response) error {
+		err = json.NewDecoder(r.Body).Decode(&rData)
+		defer r.Body.Close()
 		if err != nil {
-			return nil, err
+			fmt.Println(err)
+			return err
 		}
-		par.latest = to
+		return nil
 	}
 
-	par.channelID = ChID
-	par.token = APIToken
-	par.endPoint = convoMessages
-	r, err := f.makeAPICall(par)
+	err = loadJSON(resp)
 	if err != nil {
+		fmt.Println(err)
 		return nil, err
 	}
-
-	//return r, nil
+	Messages = append(Messages, rData.Messages...)
+	for ok := rData.ResponseMetadata.NextCursor; ok != ""; {
+		par.cursor = ok
+		resp, err := fetchMsgs()
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		err = loadJSON(resp)
+		if err != nil {
+			fmt.Println(err)
+			return nil, err
+		}
+		Messages = append(Messages, rData.Messages...)
+	}
+	return Messages, nil
 }
 
 func (f *Fetcher) makeAPICall(params *msgHistParams) (*http.Response, error) {
@@ -139,14 +213,24 @@ func (f *Fetcher) makeAPICall(params *msgHistParams) (*http.Response, error) {
 			q.Add("latest", ToDt)
 			q.Add("inclusive", "true")
 		}
+	}
+	if params.endPoint == convoMessages || params.endPoint == convoMembers {
 		if params.cursor != "" {
 			q.Add("cursor", params.cursor)
 		}
+		if MaxItems > 1000 {
+			fmt.Println("Maximum number of items that can be retrieved is 1000.")
+			MaxItems = 1000
+			params.limit = 200
+			MaxItems -= 200
+		} else if 1000 > MaxItems && MaxItems > 200 {
+			params.limit = 200
+			MaxItems -= 200
+		} else if 0 < MaxItems && MaxItems < 200 {
+			params.limit = int(MaxItems)
+		}
 		lmt := strconv.Itoa(params.limit)
 		q.Add("limit", lmt)
-	}
-	if params.cursor != "" {
-		q.Add("cursor", params.cursor)
 	}
 
 	resp, err := f.HTTPClient.DoRequest(req)

@@ -26,24 +26,10 @@ type convoInfoRawResponse struct {
 }
 
 type convoHistoryResponse struct {
-	Success  bool `json:"ok"`
-	Messages []struct {
-		Type        string  `json:"type"`
-		UserID      string  `json:"user"`
-		Text        string  `json:"text"`
-		TimeStamp   float64 `json:"ts"`
-		Attachments []struct {
-			ServiceName string `json:"service_name"`
-			Text        string `json:"text"`
-			FallBack    string `json:"fallback"`
-			ThumbURL    string `json:"thumb_url"`
-			ThumbWidth  int    `json:"thumb_width"`
-			ThumbHeight int    `json:"thumb_height"`
-			ID          int    `json:"id"`
-		} `json:"attachments"`
-	} `json:"messages"`
-	HasMore          bool `json:"has_more"`
-	PinCount         int  `json:"pin_count"`
+	Success          bool     `json:"ok"`
+	Messages         []rawMsg `json:"messages"`
+	HasMore          bool     `json:"has_more"`
+	PinCount         int      `json:"pin_count"`
 	ResponseMetadata struct {
 		NextCursor string `json:"next_cursor"`
 	} `json:"response_metadata"`
@@ -59,20 +45,36 @@ type convoMembersRawResponse struct {
 	Err string `json:"error"`
 }
 
-// type msgAttachment struct {
-// 	ServiceName string `json:"service_name"`
-// 	Text        string `json:"text"`
-// 	FallBack    string `json:"fallback"`
-// 	ThumbURL    string `json:"thumb_url"`
-// 	ThumbWidth  int    `json:"thumb_width"`
-// 	ThumbHeight int    `json:"thumb_height"`
-// 	ID          int    `json:"id"`
-// }
+type msgAttachment struct {
+	ServiceName string `json:"service_name"`
+	Text        string `json:"text"`
+	FallBack    string `json:"fallback"`
+	ThumbURL    string `json:"thumb_url"`
+	ThumbWidth  int    `json:"thumb_width"`
+	ThumbHeight int    `json:"thumb_height"`
+	ID          int    `json:"id"`
+}
 
-// type rawMsg struct {
-// 	Type        string          `json:"type"`
-// 	UserID      string          `json:"user"`
-// 	Text        string          `json:"text"`
-// 	TimeStamp   float64         `json:"ts"`
-// 	Attachments []msgAttachment `json:"attachments"`
-// }
+type rawMsg struct {
+	Type        string          `json:"type"`
+	UserID      string          `json:"user"`
+	Text        string          `json:"text"`
+	TimeStamp   float64         `json:"ts"`
+	Attachments []msgAttachment `json:"attachments"`
+}
+
+// Messages []struct {
+// 	Type        string  `json:"type"`
+// 	UserID      string  `json:"user"`
+// 	Text        string  `json:"text"`
+// 	TimeStamp   float64 `json:"ts"`
+// 	Attachments []struct {
+// 		ServiceName string `json:"service_name"`
+// 		Text        string `json:"text"`
+// 		FallBack    string `json:"fallback"`
+// 		ThumbURL    string `json:"thumb_url"`
+// 		ThumbWidth  int    `json:"thumb_width"`
+// 		ThumbHeight int    `json:"thumb_height"`
+// 		ID          int    `json:"id"`
+// 	} `json:"attachments"`
+// } `json:"messages"`
