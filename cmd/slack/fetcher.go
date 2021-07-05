@@ -7,6 +7,8 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/elastic/go-elasticsearch/v8"
 )
 
 const (
@@ -21,11 +23,13 @@ type Fetcher struct {
 	DSName          string
 	IncludeArchived bool
 	HTTPClient      *Client
-	ElasticClient   interface{}
+	ElasticClient   *elasticsearch.Client
 	BackendVersion  string
 	Debug           int
 	DateFrom        time.Time
 }
+
+func NewFetcher(dsName, backEndVers string)
 
 //GetChannelInfo method makes the conversations.info api call
 func (f *Fetcher) GetChannelInfo() (map[string]interface{}, error) {
@@ -213,8 +217,6 @@ func (f *Fetcher) makeAPICall(params *msgHistParams) (*http.Response, error) {
 			q.Add("latest", ToDt)
 			q.Add("inclusive", "true")
 		}
-	}
-	if params.endPoint == convoMessages || params.endPoint == convoMembers {
 		if params.cursor != "" {
 			q.Add("cursor", params.cursor)
 		}
