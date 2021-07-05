@@ -26,10 +26,20 @@ type Fetcher struct {
 	ElasticClient   *elasticsearch.Client
 	BackendVersion  string
 	Debug           int
-	DateFrom        time.Time
 }
 
-func NewFetcher(dsName, backEndVers string)
+//NewFetcher creates a Fetcher instance
+func NewFetcher(dsName, backEndVers string, webClient *Client, esClient *elasticsearch.Client, allowArchive bool, debug int) *Fetcher {
+	f := &Fetcher{
+		DSName:          dsName,
+		BackendVersion:  backEndVers,
+		HTTPClient:      webClient,
+		ElasticClient:   esClient,
+		IncludeArchived: allowArchive,
+		Debug:           debug,
+	}
+	return f
+}
 
 //GetChannelInfo method makes the conversations.info api call
 func (f *Fetcher) GetChannelInfo() (map[string]interface{}, error) {
@@ -124,10 +134,10 @@ func GetChannelMembers(f *Fetcher, par *msgHistParams) (int, error) {
 }
 
 //GetMsgHistory fetches messages from the specified channel
-func GetMsgHistory(f *Fetcher, par *msgHistParams) ([]rawMsg, error) {
+func GetMsgHistory(f *Fetcher, par *msgHistParams) ([]RawMsg, error) {
 	var (
 		rData    convoHistoryResponse
-		Messages []rawMsg
+		Messages []RawMsg
 	)
 	fetchMsgs := func() (*http.Response, error) {
 		if Oldest != "" {

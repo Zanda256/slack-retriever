@@ -6,7 +6,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 )
 
-func newESClient() (*elasticsearch.Client, error) {
+//NewESClient ctreates anew elasticsearch client
+func NewESClient() (*elasticsearch.Client, error) {
 	es, err := elasticsearch.NewDefaultClient()
 	if err != nil {
 		log.Printf("Error creating the client: %s", err)

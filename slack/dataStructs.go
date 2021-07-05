@@ -27,7 +27,7 @@ type convoInfoRawResponse struct {
 
 type convoHistoryResponse struct {
 	Success          bool     `json:"ok"`
-	Messages         []rawMsg `json:"messages"`
+	Messages         []RawMsg `json:"messages"`
 	HasMore          bool     `json:"has_more"`
 	PinCount         int      `json:"pin_count"`
 	ResponseMetadata struct {
@@ -45,7 +45,8 @@ type convoMembersRawResponse struct {
 	Err string `json:"error"`
 }
 
-type msgAttachment struct {
+//MsgAttachment
+type MsgAttachment struct {
 	ServiceName string `json:"service_name"`
 	Text        string `json:"text"`
 	FallBack    string `json:"fallback"`
@@ -55,12 +56,13 @@ type msgAttachment struct {
 	ID          int    `json:"id"`
 }
 
-type rawMsg struct {
+//RawMsg
+type RawMsg struct {
 	Type        string          `json:"type"`
 	UserID      string          `json:"user"`
 	Text        string          `json:"text"`
 	TimeStamp   float64         `json:"ts"`
-	Attachments []msgAttachment `json:"attachments"`
+	Attachments []MsgAttachment `json:"attachments"`
 }
 
 // Messages []struct {
