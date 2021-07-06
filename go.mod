@@ -1,4 +1,4 @@
-module slack-retriever/cmd
+module slack-retriever
 
 go 1.15
 

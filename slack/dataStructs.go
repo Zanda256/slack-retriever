@@ -45,7 +45,7 @@ type convoMembersRawResponse struct {
 	Err string `json:"error"`
 }
 
-//MsgAttachment
+//MsgAttachment ...
 type MsgAttachment struct {
 	ServiceName string `json:"service_name"`
 	Text        string `json:"text"`
@@ -56,7 +56,7 @@ type MsgAttachment struct {
 	ID          int    `json:"id"`
 }
 
-//RawMsg
+//RawMsg ...
 type RawMsg struct {
 	Type        string          `json:"type"`
 	UserID      string          `json:"user"`
