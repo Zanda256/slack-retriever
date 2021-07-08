@@ -9,14 +9,14 @@ var (
 	Archives bool
 )
 
-type msgHistParams struct {
-	channelID string
-	token     string
-	cursor    string
+type MsgHistParams struct {
+	ChannelID string
+	Token     string
+	Cursor    string
 	latest    float64
 	limit     int
 	oldest    float64
-	endPoint  string
+	EndPoint  string
 }
 
 type convoInfoRawResponse struct {

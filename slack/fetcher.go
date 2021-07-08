@@ -44,12 +44,13 @@ func NewFetcher(dsName, backEndVers string, webClient *Client, esClient *elastic
 //GetChannelInfo method makes the conversations.info api call
 func (f *Fetcher) GetChannelInfo() (map[string]interface{}, error) {
 	var rData convoInfoRawResponse
-	var Info map[string]interface{}
-	par := &msgHistParams{
-		channelID: ChID,
-		token:     APIToken,
-		endPoint:  convoInfo,
+	Info := make(map[string]interface{})
+	par := &MsgHistParams{
+		ChannelID: ChID,
+		Token:     APIToken,
+		EndPoint:  convoInfo,
 	}
+	fmt.Printf("par.-%s , CHID : %s\n", par.ChannelID, ChID)
 	r, err := f.makeAPICall(par)
 	if err != nil {
 		fmt.Println(err)
@@ -68,6 +69,7 @@ func (f *Fetcher) GetChannelInfo() (map[string]interface{}, error) {
 		Info["creator"] = rData.Channel["creator"].(string)
 
 	} else if !rData.Success {
+		fmt.Printf("Result : %+v", rData)
 		err = fmt.Errorf("can not fetch channel info because : %s", rData.Err)
 		return nil, err
 	}
@@ -75,15 +77,15 @@ func (f *Fetcher) GetChannelInfo() (map[string]interface{}, error) {
 }
 
 //GetChannelMembers fetches a list of memberIds for given channel
-func GetChannelMembers(f *Fetcher, par *msgHistParams) (int, error) {
+func GetChannelMembers(f *Fetcher, par *MsgHistParams) (int, error) {
 	var (
 		rData      convoMembersRawResponse
 		numMembers int
 	)
 	fetchMembers := func() (*http.Response, error) {
-		par.channelID = ChID
-		par.token = APIToken
-		par.endPoint = convoMessages
+		par.ChannelID = ChID
+		par.Token = APIToken
+		par.EndPoint = convoMessages
 
 		r, err := f.makeAPICall(par)
 		if err != nil {
@@ -117,7 +119,7 @@ func GetChannelMembers(f *Fetcher, par *msgHistParams) (int, error) {
 	}
 	numMembers += len(rData.MembersIDs)
 	for ok := rData.ResponseMetadata.NextCursor; ok != ""; {
-		par.cursor = ok
+		par.Cursor = ok
 		resp, err := fetchMembers()
 		if err != nil {
 			fmt.Println(err)
@@ -134,7 +136,7 @@ func GetChannelMembers(f *Fetcher, par *msgHistParams) (int, error) {
 }
 
 //GetMsgHistory fetches messages from the specified channel
-func GetMsgHistory(f *Fetcher, par *msgHistParams) ([]RawMsg, error) {
+func GetMsgHistory(f *Fetcher, par *MsgHistParams) ([]RawMsg, error) {
 	var (
 		rData    convoHistoryResponse
 		Messages []RawMsg
@@ -155,9 +157,9 @@ func GetMsgHistory(f *Fetcher, par *msgHistParams) ([]RawMsg, error) {
 			par.latest = to
 		}
 
-		par.channelID = ChID
-		par.token = APIToken
-		par.endPoint = convoMessages
+		par.ChannelID = ChID
+		par.Token = APIToken
+		par.EndPoint = convoMessages
 		r, err := f.makeAPICall(par)
 		if err != nil {
 			return nil, err
@@ -183,7 +185,7 @@ func GetMsgHistory(f *Fetcher, par *msgHistParams) ([]RawMsg, error) {
 	}
 	Messages = append(Messages, rData.Messages...)
 	for ok := rData.ResponseMetadata.NextCursor; ok != ""; {
-		par.cursor = ok
+		par.Cursor = ok
 		resp, err := fetchMsgs()
 		if err != nil {
 			fmt.Println(err)
@@ -199,9 +201,9 @@ func GetMsgHistory(f *Fetcher, par *msgHistParams) ([]RawMsg, error) {
 	return Messages, nil
 }
 
-func (f *Fetcher) makeAPICall(params *msgHistParams) (*http.Response, error) {
-	endPointURL := strings.Join([]string{slackAPIURL, params.endPoint}, "/")
-	tokenstr := fmt.Sprintf("Bearer %s", params.token)
+func (f *Fetcher) makeAPICall(params *MsgHistParams) (*http.Response, error) {
+	endPointURL := strings.Join([]string{slackAPIURL, params.EndPoint}, "/")
+	tokenstr := fmt.Sprintf("Bearer %s", params.Token)
 	usrAgentstr := fmt.Sprintf("Go_Perceaval_%s/%s", f.DSName, f.BackendVersion)
 
 	req, err := http.NewRequest("GET", endPointURL, nil)
@@ -212,11 +214,12 @@ func (f *Fetcher) makeAPICall(params *msgHistParams) (*http.Response, error) {
 	//setting request headers
 	req.Header.Set("User-Agent", usrAgentstr)
 	req.Header.Set("Authorization", tokenstr)
+	req.Header.Set("Content-type", "application/json; charset=utf-8")
 
 	//setting request query string parameters
 	q := req.URL.Query()
-	q.Add("channel", params.channelID)
-	if params.endPoint == convoMessages {
+	q.Add("channel", params.ChannelID)
+	if params.EndPoint == convoMessages {
 		if params.oldest > 0 {
 			fromDt := strconv.FormatFloat(params.oldest, 'f', 6, 64)
 			q.Add("oldest", fromDt)
@@ -227,8 +230,8 @@ func (f *Fetcher) makeAPICall(params *msgHistParams) (*http.Response, error) {
 			q.Add("latest", ToDt)
 			q.Add("inclusive", "true")
 		}
-		if params.cursor != "" {
-			q.Add("cursor", params.cursor)
+		if params.Cursor != "" {
+			q.Add("cursor", params.Cursor)
 		}
 		if MaxItems > 1000 {
 			fmt.Println("Maximum number of items that can be retrieved is 1000.")
@@ -244,6 +247,9 @@ func (f *Fetcher) makeAPICall(params *msgHistParams) (*http.Response, error) {
 		lmt := strconv.Itoa(params.limit)
 		q.Add("limit", lmt)
 	}
+	req.URL.RawQuery = q.Encode()
+
+	fmt.Println(req.URL.String())
 
 	resp, err := f.HTTPClient.DoRequest(req)
 	if err != nil {

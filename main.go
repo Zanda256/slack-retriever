@@ -1,6 +1,9 @@
 package main
 
 import (
+	"fmt"
+	"os"
+
 	"github.com/Zanda256/slack-retriever/slack"
 )
 
@@ -12,32 +15,34 @@ func main() {
 	//Initialize rate limited http client
 	c := slack.NewClient()
 	//Initialize elasticsearch Client
-	es7 := slack.NewESClient()
+	es7, err := slack.NewESClient()
+	checkError(err)
 
-	myFetcher := slack.NewFetcher("slack", "1.0", c, es7, Archives)
+	myFetcher := slack.NewFetcher("slack", "1.0", c, es7, slack.Archives, 0)
 
-	channelInfo, err := f.GetChannelInfo()
+	channelInfo, err := myFetcher.GetChannelInfo()
 	checkError(err)
 
 	fmt.Println(channelInfo)
 
-	if channelInfo["arch"] == true && Archives == false {
+	if channelInfo["arch"] == true && slack.Archives == false {
 		fmt.Println("Channel %s is archived. Set Archives option to true to fetch messages", slack.ChID)
 	}
 
-	p := &msgHistParams{}
+	p := &slack.MsgHistParams{}
 
-	numChannelMembers, err := GetChannelMembers(myFetcher, p)
+	numChannelMembers, err := slack.GetChannelMembers(myFetcher, p)
 	checkError(err)
 	fmt.Println(numChannelMembers)
 	channelInfo["numMembers"] = numChannelMembers
 
-	msgs := make([]slack.RawMsg)
-	msgs = GetMsgHistory(myFetcher, p)
+	msgs := make([]slack.RawMsg, 0)
+	msgs, _ = slack.GetMsgHistory(myFetcher, p)
+	fmt.Println(msgs)
 
 }
 
-func checkError(err) {
+func checkError(err error) {
 	if err != nil {
 		fmt.Println(err)
 		os.Exit(1)
