@@ -85,7 +85,7 @@ func GetChannelMembers(f *Fetcher, par *MsgHistParams) (int, error) {
 	fetchMembers := func() (*http.Response, error) {
 		par.ChannelID = ChID
 		par.Token = APIToken
-		par.EndPoint = convoMessages
+		par.EndPoint = convoMembers
 
 		r, err := f.makeAPICall(par)
 		if err != nil {
@@ -185,6 +185,9 @@ func GetMsgHistory(f *Fetcher, par *MsgHistParams) ([]RawMsg, error) {
 	}
 	Messages = append(Messages, rData.Messages...)
 	for ok := rData.ResponseMetadata.NextCursor; ok != ""; {
+		if MaxItems < 0 {
+			break
+		}
 		par.Cursor = ok
 		resp, err := fetchMsgs()
 		if err != nil {
@@ -238,11 +241,12 @@ func (f *Fetcher) makeAPICall(params *MsgHistParams) (*http.Response, error) {
 			MaxItems = 1000
 			params.limit = 200
 			MaxItems -= 200
-		} else if 1000 > MaxItems && MaxItems > 200 {
+		} else if 1000 >= MaxItems && MaxItems >= 200 {
 			params.limit = 200
 			MaxItems -= 200
 		} else if 0 < MaxItems && MaxItems < 200 {
 			params.limit = int(MaxItems)
+			MaxItems -= 200
 		}
 		lmt := strconv.Itoa(params.limit)
 		q.Add("limit", lmt)
@@ -256,7 +260,6 @@ func (f *Fetcher) makeAPICall(params *MsgHistParams) (*http.Response, error) {
 		fmt.Println(err)
 		return nil, err
 	}
-
 	return resp, nil
 }
 

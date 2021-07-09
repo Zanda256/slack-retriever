@@ -61,7 +61,7 @@ type RawMsg struct {
 	Type        string          `json:"type"`
 	UserID      string          `json:"user"`
 	Text        string          `json:"text"`
-	TimeStamp   float64         `json:"ts"`
+	TimeStamp   string          `json:"ts"`
 	Attachments []MsgAttachment `json:"attachments"`
 }
 

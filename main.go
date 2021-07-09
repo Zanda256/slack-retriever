@@ -23,17 +23,17 @@ func main() {
 	channelInfo, err := myFetcher.GetChannelInfo()
 	checkError(err)
 
-	fmt.Println(channelInfo)
+	fmt.Printf("channelInfo: %+v\n", channelInfo)
 
 	if channelInfo["arch"] == true && slack.Archives == false {
-		fmt.Println("Channel %s is archived. Set Archives option to true to fetch messages", slack.ChID)
+		fmt.Printf("Channel %s is archived. Set Archives option to true to fetch messages", slack.ChID)
 	}
 
 	p := &slack.MsgHistParams{}
 
 	numChannelMembers, err := slack.GetChannelMembers(myFetcher, p)
 	checkError(err)
-	fmt.Println(numChannelMembers)
+	fmt.Printf("Num Members: %d\n", numChannelMembers)
 	channelInfo["numMembers"] = numChannelMembers
 
 	msgs := make([]slack.RawMsg, 0)
