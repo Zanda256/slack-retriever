@@ -15,10 +15,10 @@ func main() {
 	//Initialize rate limited http client
 	c := slack.NewClient()
 	//Initialize elasticsearch Client
-	es7, err := slack.NewESClient()
-	checkError(err)
+	// es7, err := slack.NewESClient()
+	// checkError(err)
 
-	myFetcher := slack.NewFetcher("slack", "1.0", c, es7, slack.Archives, 0)
+	myFetcher := slack.NewFetcher("slack", "1.0", c, slack.Archives, 0)
 
 	channelInfo, err := myFetcher.GetChannelInfo()
 	checkError(err)

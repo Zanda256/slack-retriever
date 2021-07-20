@@ -35,7 +35,7 @@ var (
 	// specifically so we resort to matching on the error string.
 	schemeErrorRe = regexp.MustCompile(`unsupported protocol scheme`)
 
-	//MyRetryPolicy specifies conditions under which the http.Client should retry a failed request.
+	//MyRetryPolicy specifies conditions under which the http.Client should retry a failed request. Returns true if request should be retried.
 	MyRetryPolicy = func(ctx context.Context, resp *http.Response, err error) (bool, error) {
 		if ctx.Err() != nil {
 			return false, ctx.Err()

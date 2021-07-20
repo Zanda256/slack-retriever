@@ -7,8 +7,6 @@ import (
 	"strconv"
 	"strings"
 	"time"
-
-	"github.com/elastic/go-elasticsearch/v8"
 )
 
 const (
@@ -23,18 +21,16 @@ type Fetcher struct {
 	DSName          string
 	IncludeArchived bool
 	HTTPClient      *Client
-	ElasticClient   *elasticsearch.Client
 	BackendVersion  string
 	Debug           int
 }
 
 //NewFetcher creates a Fetcher instance
-func NewFetcher(dsName, backEndVers string, webClient *Client, esClient *elasticsearch.Client, allowArchive bool, debug int) *Fetcher {
+func NewFetcher(dsName, backEndVers string, webClient *Client, allowArchive bool, debug int) *Fetcher {
 	f := &Fetcher{
 		DSName:          dsName,
 		BackendVersion:  backEndVers,
 		HTTPClient:      webClient,
-		ElasticClient:   esClient,
 		IncludeArchived: allowArchive,
 		Debug:           debug,
 	}
@@ -238,7 +234,7 @@ func (f *Fetcher) makeAPICall(params *MsgHistParams) (*http.Response, error) {
 		}
 		if MaxItems > 1000 {
 			fmt.Println("Maximum number of items that can be retrieved is 1000.")
-			MaxItems = 1000
+			//	MaxItems = 1000
 			params.limit = 200
 			MaxItems -= 200
 		} else if 1000 >= MaxItems && MaxItems >= 200 {
