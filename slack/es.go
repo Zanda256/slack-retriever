@@ -2,6 +2,7 @@ package slack
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"log"
 	"strings"
@@ -72,4 +73,35 @@ func (s *EsStorage) NewESIndex(name, mapping string) (bool, error) {
 	}
 	fmt.Println(resp.String())
 	return true, nil
+}
+
+func (s *EsStorage) IndexRawDoc(name, id, body string) (bool, error) {
+	req := &esapi.IndexRequest{
+		Index:      name,                    // Index name
+		Body:       strings.NewReader(body), // Document body
+		DocumentID: id,                      // Document ID
+		Refresh:    "true",                  // Refresh
+	}
+
+	res, err := req.Do(context.Background(), s.c)
+	if err != nil {
+		log.Fatalf("Error getting response: %s", err)
+	}
+	if res.IsError() {
+		err = fmt.Errorf("Failed to index document: %d %s", res.StatusCode, id)
+		return false, err
+	}
+	return true, nil
+}
+
+func ToJSON(r interface{}) (string, error) {
+	if data, ok := r.(convoHistoryResponse); ok {
+		json, err := json.MarshalIndent(data, "", "    ")
+		if err != nil {
+			fmt.Println(err)
+			return "", err
+		}
+		return string(json), nil
+	}
+	return "", fmt.Errorf("can not marshal invalid data format: %+v", r)
 }

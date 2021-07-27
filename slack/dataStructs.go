@@ -62,7 +62,7 @@ type RawMsg struct {
 	UserID      string          `json:"user"`
 	Text        string          `json:"text"`
 	TimeStamp   string          `json:"ts"`
-	Attachments []MsgAttachment `json:"attachments"`
+	Attachments []MsgAttachment `json:"attachments,omitempty"`
 }
 
 // Messages []struct {
